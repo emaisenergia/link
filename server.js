@@ -16,14 +16,6 @@ const BASE_DIR = IS_VERCEL ? '/tmp' : __dirname;
 const UPLOADS_DIR = path.join(BASE_DIR, 'uploads');
 const DATA_FILE = path.join(BASE_DIR, 'data', 'captures.json');
 
-// Cria diretórios necessários
-[UPLOADS_DIR, path.join(BASE_DIR, 'data')].forEach(dir => {
-  if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
-});
-
-// Inicializa arquivo de dados
-if (!fs.existsSync(DATA_FILE)) fs.writeFileSync(DATA_FILE, '[]');
-
 // --- Middlewares ---
 app.use(express.json({ limit: '10mb' }));
 app.use(express.static(path.join(__dirname, 'public')));
@@ -35,12 +27,21 @@ app.use(session({
 }));
 
 // --- Helpers ---
+function ensureDirs() {
+  [UPLOADS_DIR, path.join(BASE_DIR, 'data')].forEach(dir => {
+    if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+  });
+  if (!fs.existsSync(DATA_FILE)) fs.writeFileSync(DATA_FILE, '[]');
+}
+
 function loadData() {
+  ensureDirs();
   try { return JSON.parse(fs.readFileSync(DATA_FILE, 'utf8')); }
   catch { return []; }
 }
 
 function saveData(data) {
+  ensureDirs();
   fs.writeFileSync(DATA_FILE, JSON.stringify(data, null, 2));
 }
 
