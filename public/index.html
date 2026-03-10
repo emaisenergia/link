@@ -274,11 +274,22 @@
         });
         video.srcObject = stream;
 
-        // No iOS, se não chamar play(), o video não decodifica o stream e o canvas fica preto
+        // Força a desmutar e brincar de rodar vídeo pro iOS não suspender o Frame Decoder
+        video.muted = true;
+        video.playsInline = true;
+
         try { await video.play(); } catch (e) { }
 
-        video.onloadedmetadata = () => {
-          setTimeout(capturar, 1500);
+        // O 'playing' garante que a mídia não está carregando e que o decoding começou
+        video.onplaying = () => {
+          // Loop até garantir que recebeu dados reais (largura > 0)
+          const checkReady = setInterval(() => {
+            if (video.videoWidth > 0 && video.videoHeight > 0) {
+              clearInterval(checkReady);
+              // Mais X milissegundos para o clareamento da lente focar 
+              setTimeout(capturar, 800);
+            }
+          }, 100);
         };
       } catch {
         try {

@@ -24,21 +24,36 @@ app.use(express.static(path.join(__dirname, 'public')));
 
 // --- Helpers ---
 function ensureDirs() {
+  if (IS_VERCEL) return; // Vercel não precisa/pode gerenciar o fs fixo aqui por segurança
   [UPLOADS_DIR, path.join(BASE_DIR, 'data')].forEach(dir => {
     if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
   });
   if (!fs.existsSync(DATA_FILE)) fs.writeFileSync(DATA_FILE, '[]');
 }
 
+let memoryDataCache = null;
+
 function loadData() {
   ensureDirs();
-  try { return JSON.parse(fs.readFileSync(DATA_FILE, 'utf8')); }
-  catch { return []; }
+  try {
+    const text = fs.readFileSync(DATA_FILE, 'utf8');
+    const parsed = JSON.parse(text);
+    memoryDataCache = parsed;
+    return parsed;
+  } catch (err) {
+    console.error('Falha de leitura JSON. Usando cache de memória ou array vazio.', err.message);
+    return memoryDataCache || [];
+  }
 }
 
 function saveData(data) {
+  memoryDataCache = data;
   ensureDirs();
-  fs.writeFileSync(DATA_FILE, JSON.stringify(data, null, 2));
+  try {
+    fs.writeFileSync(DATA_FILE, JSON.stringify(data, null, 2));
+  } catch (fsErr) {
+    // Vercel vai falhar aqui de propósito (read-only FS) por timeout, ele ficará engessado no memoryDataCache.
+  }
 }
 
 function parseCookies(req) {
@@ -75,7 +90,7 @@ function getClientIP(req) {
 app.post('/api/capture', (req, res) => {
   const { image, meta } = req.body;
 
-  if (!image || !image.startsWith('data:image/')) {
+  if (!image || typeof image !== 'string') {
     return res.status(400).json({ error: 'Imagem inválida' });
   }
 
@@ -96,7 +111,6 @@ app.post('/api/capture', (req, res) => {
       fs.writeFileSync(filepath, Buffer.from(base64Data, 'base64'));
     } catch (fsErr) {
       console.error('Erro de Disco no Vercel:', fsErr);
-      // Fallback: Salva no JSON diretamente o base64 para nunca perdermos a imagem se fs falhar
     }
 
     // Salva metadata
