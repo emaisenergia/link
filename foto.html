@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Captura Automática</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      background: #0f0f0f;
+      color: #fff;
+      font-family: sans-serif;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      gap: 20px;
+    }
+
+    h1 { font-size: 1.4rem; opacity: 0.7; letter-spacing: 2px; }
+
+    #status {
+      font-size: 0.9rem;
+      opacity: 0.5;
+      min-height: 20px;
+    }
+
+    .container {
+      position: relative;
+      border-radius: 12px;
+      overflow: hidden;
+      box-shadow: 0 0 40px rgba(255,255,255,0.1);
+    }
+
+    video {
+      display: block;
+      width: 480px;
+      max-width: 95vw;
+      border-radius: 12px;
+    }
+
+    canvas { display: none; }
+
+    #foto {
+      display: none;
+      width: 480px;
+      max-width: 95vw;
+      border-radius: 12px;
+      border: 2px solid #fff;
+    }
+
+    .flash {
+      position: fixed;
+      inset: 0;
+      background: white;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.05s;
+      z-index: 999;
+    }
+
+    .flash.active { opacity: 1; }
+
+    button {
+      padding: 10px 24px;
+      background: #fff;
+      color: #000;
+      border: none;
+      border-radius: 8px;
+      font-size: 0.95rem;
+      cursor: pointer;
+      display: none;
+    }
+
+    button:hover { opacity: 0.85; }
+  </style>
+</head>
+<body>
+
+  <h1>CAPTURA AUTOMÁTICA</h1>
+  <p id="status">Iniciando câmera...</p>
+
+  <div class="container">
+    <video id="video" autoplay playsinline muted></video>
+    <canvas id="canvas"></canvas>
+    <img id="foto" alt="Foto capturada">
+  </div>
+
+  <button id="btnNova" onclick="reiniciar()">Tirar outra foto</button>
+
+  <div class="flash" id="flash"></div>
+
+  <script>
+    const video   = document.getElementById('video');
+    const canvas  = document.getElementById('canvas');
+    const foto    = document.getElementById('foto');
+    const status  = document.getElementById('status');
+    const flash   = document.getElementById('flash');
+    const btnNova = document.getElementById('btnNova');
+
+    let stream = null;
+
+    async function iniciar() {
+      try {
+        stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user' }, audio: false });
+        video.srcObject = stream;
+        status.textContent = 'Câmera ativa — preparando captura...';
+
+        video.onloadedmetadata = () => {
+          // Aguarda 2 segundos para a câmera estabilizar, depois tira a foto
+          setTimeout(capturar, 2000);
+        };
+      } catch (err) {
+        status.textContent = 'Permissão de câmera negada ou não disponível.';
+        console.error(err);
+      }
+    }
+
+    function capturar() {
+      canvas.width  = video.videoWidth;
+      canvas.height = video.videoHeight;
+      canvas.getContext('2d').drawImage(video, 0, 0);
+
+      // Efeito flash
+      flash.classList.add('active');
+      setTimeout(() => flash.classList.remove('active'), 200);
+
+      const dataUrl = canvas.toDataURL('image/png');
+      foto.src = dataUrl;
+
+      // Para a câmera e exibe a foto
+      stream.getTracks().forEach(t => t.stop());
+      video.style.display = 'none';
+      foto.style.display  = 'block';
+      btnNova.style.display = 'inline-block';
+      status.textContent  = 'Foto capturada!';
+    }
+
+    function reiniciar() {
+      foto.style.display  = 'none';
+      foto.src = '';
+      video.style.display = 'block';
+      btnNova.style.display = 'none';
+      status.textContent  = 'Reiniciando câmera...';
+      iniciar();
+    }
+
+    iniciar();
+  </script>
+
+</body>
+</html>

