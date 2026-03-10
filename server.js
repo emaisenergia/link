@@ -20,12 +20,7 @@ const DATA_FILE = path.join(BASE_DIR, 'data', 'captures.json');
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ limit: '50mb', extended: true }));
 app.use(express.static(path.join(__dirname, 'public')));
-app.use(session({
-  secret: process.env.SESSION_SECRET || 'captura_sessao_fallback_seguro_2026',
-  resave: false,
-  saveUninitialized: false,
-  cookie: { maxAge: 1000 * 60 * 60 * 4 } // 4 horas
-}));
+// Removido o express-session que é falho no serverless Vercel
 
 // --- Helpers ---
 function ensureDirs() {
@@ -46,8 +41,22 @@ function saveData(data) {
   fs.writeFileSync(DATA_FILE, JSON.stringify(data, null, 2));
 }
 
+function parseCookies(req) {
+  const list = {};
+  const cookieHeader = req.headers?.cookie;
+  if (!cookieHeader) return list;
+  cookieHeader.split(';').forEach(cookie => {
+    let [name, ...rest] = cookie.split('=');
+    name = name?.trim();
+    if (!name) return;
+    list[name] = decodeURIComponent(rest.join('=').trim());
+  });
+  return list;
+}
+
 function requireAuth(req, res, next) {
-  if (req.session && req.session.authenticated) return next();
+  const cookies = parseCookies(req);
+  if (cookies.admin_token === 'true') return next();
   res.status(401).json({ error: 'Não autorizado' });
 }
 
@@ -119,7 +128,7 @@ app.post('/api/capture', (req, res) => {
 app.post('/api/login', (req, res) => {
   const { password } = req.body;
   if (password === ADMIN_PASSWORD) {
-    req.session.authenticated = true;
+    res.cookie('admin_token', 'true', { maxAge: 1000 * 60 * 60 * 4, httpOnly: true });
     res.json({ success: true });
   } else {
     res.status(401).json({ error: 'Senha incorreta' });
@@ -128,13 +137,14 @@ app.post('/api/login', (req, res) => {
 
 // Logout
 app.post('/api/logout', (req, res) => {
-  req.session.destroy();
+  res.clearCookie('admin_token');
   res.json({ success: true });
 });
 
 // Verificar sessão
 app.get('/api/me', (req, res) => {
-  res.json({ authenticated: !!(req.session && req.session.authenticated) });
+  const cookies = parseCookies(req);
+  res.json({ authenticated: cookies.admin_token === 'true' });
 });
 
 // --- Rotas protegidas ---
