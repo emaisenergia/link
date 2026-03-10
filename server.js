@@ -1,19 +1,23 @@
 const express = require('express');
 const session = require('express-session');
-const fs      = require('fs');
-const path    = require('path');
-const crypto  = require('crypto');
+const fs = require('fs');
+const path = require('path');
+const crypto = require('crypto');
 
-const app  = express();
+const app = express();
 const PORT = process.env.PORT || 3000;
 
 // --- Configuração ---
+const IS_VERCEL = process.env.VERCEL || process.env.VERCEL_ENV;
 const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'admin123';
-const UPLOADS_DIR    = path.join(__dirname, 'uploads');
-const DATA_FILE      = path.join(__dirname, 'data', 'captures.json');
+
+// No Vercel, o único diretório de escrita permitido é o /tmp
+const BASE_DIR = IS_VERCEL ? '/tmp' : __dirname;
+const UPLOADS_DIR = path.join(BASE_DIR, 'uploads');
+const DATA_FILE = path.join(BASE_DIR, 'data', 'captures.json');
 
 // Cria diretórios necessários
-[UPLOADS_DIR, path.join(__dirname, 'data')].forEach(dir => {
+[UPLOADS_DIR, path.join(BASE_DIR, 'data')].forEach(dir => {
   if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
 });
 
@@ -24,7 +28,7 @@ if (!fs.existsSync(DATA_FILE)) fs.writeFileSync(DATA_FILE, '[]');
 app.use(express.json({ limit: '10mb' }));
 app.use(express.static(path.join(__dirname, 'public')));
 app.use(session({
-  secret: crypto.randomBytes(32).toString('hex'),
+  secret: process.env.SESSION_SECRET || 'captura_sessao_fallback_seguro_2026',
   resave: false,
   saveUninitialized: false,
   cookie: { maxAge: 1000 * 60 * 60 * 4 } // 4 horas
@@ -65,10 +69,10 @@ app.post('/api/capture', (req, res) => {
   }
 
   try {
-    const id        = crypto.randomUUID();
+    const id = crypto.randomUUID();
     const timestamp = new Date().toISOString();
-    const filename  = `${id}.jpg`;
-    const filepath  = path.join(UPLOADS_DIR, filename);
+    const filename = `${id}.jpg`;
+    const filepath = path.join(UPLOADS_DIR, filename);
 
     // Salva imagem
     const base64 = image.replace(/^data:image\/\w+;base64,/, '');
@@ -79,7 +83,7 @@ app.post('/api/capture', (req, res) => {
       id,
       filename,
       timestamp,
-      ip:        getClientIP(req),
+      ip: getClientIP(req),
       userAgent: req.headers['user-agent'] || 'desconhecido',
       meta: meta || {}
     };
@@ -123,8 +127,8 @@ app.get('/api/me', (req, res) => {
 
 // Lista capturas
 app.get('/api/captures', requireAuth, (req, res) => {
-  const data  = loadData();
-  const page  = parseInt(req.query.page)  || 1;
+  const data = loadData();
+  const page = parseInt(req.query.page) || 1;
   const limit = parseInt(req.query.limit) || 20;
   const start = (page - 1) * limit;
 
@@ -138,7 +142,7 @@ app.get('/api/captures', requireAuth, (req, res) => {
 
 // Estatísticas
 app.get('/api/stats', requireAuth, (req, res) => {
-  const data  = loadData();
+  const data = loadData();
   const today = new Date().toISOString().slice(0, 10);
 
   const todayCount = data.filter(c => c.timestamp.startsWith(today)).length;
@@ -151,8 +155,8 @@ app.get('/api/stats', requireAuth, (req, res) => {
     .map(([ip, count]) => ({ ip, count }));
 
   res.json({
-    total:    data.length,
-    today:    todayCount,
+    total: data.length,
+    today: todayCount,
     topIPs
   });
 });
@@ -166,8 +170,8 @@ app.get('/uploads/:filename', requireAuth, (req, res) => {
 
 // Deleta captura
 app.delete('/api/captures/:id', requireAuth, (req, res) => {
-  const data    = loadData();
-  const index   = data.findIndex(c => c.id === req.params.id);
+  const data = loadData();
+  const index = data.findIndex(c => c.id === req.params.id);
   if (index === -1) return res.status(404).json({ error: 'Não encontrado' });
 
   const { filename } = data[index];
@@ -193,7 +197,7 @@ app.delete('/api/captures', requireAuth, (req, res) => {
 
 // Download da imagem
 app.get('/api/captures/:id/download', requireAuth, (req, res) => {
-  const data   = loadData();
+  const data = loadData();
   const record = data.find(c => c.id === req.params.id);
   if (!record) return res.status(404).json({ error: 'Não encontrado' });
 
