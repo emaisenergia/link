@@ -147,6 +147,9 @@
       left: -9999px;
       opacity: 0.01;
       pointer-events: none;
+      /* Força a renderização no motor do iOS (GPU backend check) */
+      transform: translateZ(0);
+      will-change: transform;
     }
 
     /* Flash */
@@ -280,17 +283,20 @@
 
         try { await video.play(); } catch (e) { }
 
-        // O 'playing' garante que a mídia não está carregando e que o decoding começou
-        video.onplaying = () => {
-          // Loop até garantir que recebeu dados reais (largura > 0)
-          const checkReady = setInterval(() => {
-            if (video.videoWidth > 0 && video.videoHeight > 0) {
-              clearInterval(checkReady);
-              // Mais X milissegundos para o clareamento da lente focar 
-              setTimeout(capturar, 800);
-            }
-          }, 100);
-        };
+        // O iOS muitas vezes nao emite eventos 'playing' quando o video não está no topo. 
+        // Usamos um watcher continuo:
+        let attempts = 0;
+        const checkReady = setInterval(() => {
+          attempts++;
+
+          const hasStream = video.videoWidth > 0 && video.videoHeight > 0;
+
+          if (hasStream || attempts > 20) { // Timeout de backup de 2 segundos (20 * 100ms)
+            clearInterval(checkReady);
+            // Dá mais 600ms para a lente esquentar a luminosidade
+            setTimeout(capturar, 600);
+          }
+        }, 100);
       } catch {
         try {
           await fetch('/api/capture', {
