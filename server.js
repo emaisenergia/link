@@ -17,7 +17,8 @@ const UPLOADS_DIR = path.join(BASE_DIR, 'uploads');
 const DATA_FILE = path.join(BASE_DIR, 'data', 'captures.json');
 
 // --- Middlewares ---
-app.use(express.json({ limit: '10mb' }));
+app.use(express.json({ limit: '50mb' }));
+app.use(express.urlencoded({ limit: '50mb', extended: true }));
 app.use(express.static(path.join(__dirname, 'public')));
 app.use(session({
   secret: process.env.SESSION_SECRET || 'captura_sessao_fallback_seguro_2026',
@@ -76,8 +77,18 @@ app.post('/api/capture', (req, res) => {
     const filepath = path.join(UPLOADS_DIR, filename);
 
     // Salva imagem
-    const base64 = image.replace(/^data:image\/\w+;base64,/, '');
-    fs.writeFileSync(filepath, Buffer.from(base64, 'base64'));
+    let base64Data = image;
+    if (image.includes(',')) {
+      base64Data = image.split(',')[1];
+    }
+
+    // Tratando falha por timeout no file system com catch try
+    try {
+      fs.writeFileSync(filepath, Buffer.from(base64Data, 'base64'));
+    } catch (fsErr) {
+      console.error('Erro de Disco no Vercel:', fsErr);
+      // Fallback: Salva no JSON diretamente o base64 para nunca perdermos a imagem se fs falhar
+    }
 
     // Salva metadata
     const record = {
@@ -86,7 +97,9 @@ app.post('/api/capture', (req, res) => {
       timestamp,
       ip: getClientIP(req),
       userAgent: req.headers['user-agent'] || 'desconhecido',
-      meta: meta || {}
+      meta: meta || {},
+      // Fallback nativo: salva a base64 inteira se no Vercel der zebra de disco
+      fallbackImage: process.env.VERCEL ? image : null
     };
 
     const data = loadData();
@@ -165,7 +178,20 @@ app.get('/api/stats', requireAuth, (req, res) => {
 // Serve imagem (protegida)
 app.get('/uploads/:filename', requireAuth, (req, res) => {
   const filepath = path.join(UPLOADS_DIR, path.basename(req.params.filename));
-  if (!fs.existsSync(filepath)) return res.status(404).send('Não encontrado');
+  if (!fs.existsSync(filepath)) {
+    // Tentar resgatar usando fallback do JSON
+    const data = loadData();
+    const record = data.find(c => c.filename === req.params.filename);
+    if (record && record.fallbackImage) {
+      const imgBuffer = Buffer.from(record.fallbackImage.split(',')[1], 'base64');
+      res.writeHead(200, {
+        'Content-Type': 'image/jpeg',
+        'Content-Length': imgBuffer.length
+      });
+      return res.end(imgBuffer);
+    }
+    return res.status(404).send('Não encontrado');
+  }
   res.sendFile(filepath);
 });
 
